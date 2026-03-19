@@ -6,29 +6,15 @@ import time
 
 st.set_page_config(page_title="AI Pulse", layout="wide", initial_sidebar_state="collapsed")
 st.title("🚀 AI Pulse – Newest AI Tools & Features")
-st.markdown("**Real-time aggregator of the latest AI news, models, tools & features**")
+st.markdown("**Real-time aggregator • Earn with every click**")
 
-FEEDS = [
-    {"name": "OpenAI News", "url": "https://openai.com/news/rss.xml"},
-    {"name": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/"},
-    {"name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml"},
-    {"name": "Product Hunt (New AI Tools)", "url": "https://www.producthunt.com/feed"},
-    {"name": "Ben's Bites (AI Tools & Launches)", "url": "https://bensbites.beehiiv.com/feed"},
-    {"name": "TechCrunch AI", "url": "https://techcrunch.com/category/artificial-intelligence/feed/"},
-    {"name": "The Verge AI", "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"},
-    {"name": "VentureBeat AI", "url": "https://venturebeat.com/category/ai/feed/"},
-    {"name": "MarkTechPost", "url": "https://www.marktechpost.com/feed/"},
-    {"name": "MIT Technology Review AI", "url": "https://www.technologyreview.com/topic/artificial-intelligence/feed/"},
-    {"name": "arXiv cs.AI (Research)", "url": "https://rss.arxiv.org/rss/cs.AI"},
-]
+FEEDS = [ ... ]  # Keep your exact FEEDS list from before (no change needed)
 
 feed_names = [f["name"] for f in FEEDS]
 
-# Temporary debug (you can delete this line later)
-st.write("✅ Available sources:", feed_names)
-
 @st.cache_data(ttl=3600)
 def fetch_all_feeds():
+    # Same fetch function as before — unchanged
     all_entries = []
     progress = st.progress(0)
     for i, feed_info in enumerate(FEEDS):
@@ -61,15 +47,8 @@ if st.button("🔄 Refresh Latest AI News & Tools", type="primary", use_containe
     
     st.success(f"✅ Found {len(df)} fresh items!")
 
-    search = st.text_input("🔍 Search titles or keywords (e.g. 'GPT', 'Claude', 'new model')")
-
-    # SAFE multiselect — this fixes the crash forever
-    selected_sources = st.multiselect(
-        "Filter sources",
-        options=feed_names,
-        default=feed_names[:3],   # always safe (first 3 sources)
-        placeholder="Choose sources to filter"
-    )
+    search = st.text_input("🔍 Search titles or keywords")
+    selected_sources = st.multiselect("Filter sources", options=feed_names, default=feed_names[:3])
 
     filtered = df.copy()
     if search:
@@ -77,19 +56,24 @@ if st.button("🔄 Refresh Latest AI News & Tools", type="primary", use_containe
     if selected_sources:
         filtered = filtered[filtered["Source"].isin(selected_sources)]
 
+    # MONETIZATION: Export button for newsletter
+    if st.button("📥 Export Top 10 for Newsletter (CSV)"):
+        csv = filtered.head(10).to_csv(index=False)
+        st.download_button("⬇️ Download CSV Now", csv, "ai_pulse_top10.csv", "text/csv")
+
     if filtered.empty:
-        st.warning("No results — try a different search or filters.")
+        st.warning("No results — try different filters.")
     else:
         for _, row in filtered.iterrows():
             with st.container(border=True):
                 st.markdown(f"**{row['Title']}**")
                 st.caption(f"*{row['Source']} • {row['Published']}*")
                 st.write(row['Summary'])
-                st.markdown(f"[→ Read full article]({row['Link']})", unsafe_allow_html=True)
+                st.markdown(f"[→ Read full article]({row['Link']})  •  [Try Cursor AI](https://cursor.com/?ref=yourname)  •  [Try Perplexity](https://perplexity.ai/?ref=yourname)", unsafe_allow_html=True)
             st.divider()
 
 else:
-    st.info("👆 Click the big Refresh button above to start!")
-    st.caption("Works perfectly on Android tablet")
+    st.info("👆 Click Refresh to load the latest AI news!")
+    st.caption("Add to home screen for app feel")
 
-st.caption("💡 Add this page to your home screen in Chrome for app-like feel")
+st.caption("💰 Your app now earns when people click the tools")
