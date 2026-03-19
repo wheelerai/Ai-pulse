@@ -4,16 +4,10 @@ import pandas as pd
 from datetime import datetime
 import time
 
-# =============================================
-# CONFIG & TITLE (works great on tablet)
-# =============================================
 st.set_page_config(page_title="AI Pulse", layout="wide", initial_sidebar_state="collapsed")
 st.title("🚀 AI Pulse – Newest AI Tools & Features")
-st.markdown("**Real-time aggregator of the latest AI news, models, tools & features** (refreshes live)")
+st.markdown("**Real-time aggregator of the latest AI news, models, tools & features**")
 
-# =============================================
-# FEEDS (you can add more later)
-# =============================================
 FEEDS = [
     {"name": "OpenAI News", "url": "https://openai.com/news/rss.xml"},
     {"name": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/"},
@@ -28,28 +22,23 @@ FEEDS = [
     {"name": "arXiv cs.AI (Research)", "url": "https://rss.arxiv.org/rss/cs.AI"},
 ]
 
-# Extract just the names for the multiselect (this fixes the crash)
-feed_names = [f["name"] for f in FEEDS]st.write("Available sources:", feed_names)   # ← add this
+feed_names = [f["name"] for f in FEEDS]
 
-# =============================================
-# FETCH FUNCTION (cached)
-# =============================================
-@st.cache_data(ttl=3600)  # 1 hour cache
+# Temporary debug (you can delete this line later)
+st.write("✅ Available sources:", feed_names)
+
+@st.cache_data(ttl=3600)
 def fetch_all_feeds():
     all_entries = []
     progress = st.progress(0)
-    
     for i, feed_info in enumerate(FEEDS):
         try:
             feed = feedparser.parse(feed_info["url"])
             for entry in feed.entries[:15]:
                 published = entry.get("published_parsed")
                 pub_date = datetime(*published[:6]) if published else datetime.now()
-                
                 summary = entry.get("summary", "")[:280]
-                if len(summary) == 280:
-                    summary += "..."
-                
+                if len(summary) == 280: summary += "..."
                 all_entries.append({
                     "Source": feed_info["name"],
                     "Title": entry.title,
@@ -58,45 +47,38 @@ def fetch_all_feeds():
                     "Summary": summary
                 })
         except:
-            pass  # skip broken feed
+            pass
         progress.progress((i + 1) / len(FEEDS))
         time.sleep(0.1)
-    
     df = pd.DataFrame(all_entries)
     if not df.empty:
-        df = df.sort_values("Published", ascending=False)
-        df = df.drop_duplicates(subset=["Title"])
+        df = df.sort_values("Published", ascending=False).drop_duplicates(subset=["Title"])
     return df
 
-# =============================================
-# UI
-# =============================================
 if st.button("🔄 Refresh Latest AI News & Tools", type="primary", use_container_width=True):
     with st.spinner("Fetching from 11 sources..."):
         df = fetch_all_feeds()
     
     st.success(f"✅ Found {len(df)} fresh items!")
 
-    # Search (full width on tablet)
-    search = st.text_input("🔍 Search titles or keywords (e.g. 'GPT', 'Claude', 'new model')", placeholder="Type here...")
+    search = st.text_input("🔍 Search titles or keywords (e.g. 'GPT', 'Claude', 'new model')")
 
-    # FIXED multiselect – uses string names only (this was the crash)
+    # SAFE multiselect — this fixes the crash forever
     selected_sources = st.multiselect(
         "Filter sources",
         options=feed_names,
-        default=["Product Hunt (New AI Tools)", "OpenAI News", "Ben's Bites (AI Tools & Launches)"]
+        default=feed_names[:3],   # always safe (first 3 sources)
+        placeholder="Choose sources to filter"
     )
 
-    # Filter the data
     filtered = df.copy()
     if search:
         filtered = filtered[filtered["Title"].str.contains(search, case=False, na=False)]
     if selected_sources:
         filtered = filtered[filtered["Source"].isin(selected_sources)]
 
-    # Display as clean cards (mobile-friendly)
     if filtered.empty:
-        st.warning("No results found. Try different search or filters.")
+        st.warning("No results — try a different search or filters.")
     else:
         for _, row in filtered.iterrows():
             with st.container(border=True):
@@ -107,7 +89,7 @@ if st.button("🔄 Refresh Latest AI News & Tools", type="primary", use_containe
             st.divider()
 
 else:
-    st.info("👆 Click the Refresh button above to load the latest AI tools & news!")
-    st.caption("Built for you • Works perfectly on Android tablet")
+    st.info("👆 Click the big Refresh button above to start!")
+    st.caption("Works perfectly on Android tablet")
 
-st.caption("💡 Tip: Add to home screen in Chrome for app-like feel")
+st.caption("💡 Add this page to your home screen in Chrome for app-like feel")
